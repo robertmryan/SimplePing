@@ -1,5 +1,19 @@
 # SimplePing
 
+## Update
+
+This project takes [Apple's `SimplePing` code sample](https://developer.apple.com/library/archive/samplecode/SimplePing/Introduction/Intro.html) and has done the following:
+
+* Updated the iOS target to work with Swift 5, Xcode 11.4.
+* Pulled the `SimplePing` logic out of the view controller and into a separate `SimplePingManager` object.
+
+Robert M. Ryan<br />
+4 April 2020
+
+---
+
+## About
+
 1.4
 
 SimplePing demonstrates ping (ICMP) send and receive.
