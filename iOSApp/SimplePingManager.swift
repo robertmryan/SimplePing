@@ -6,17 +6,18 @@
 //
 
 import Foundation
+import Combine
+
+enum SimplePingResponse {
+    case start(String)
+    case sendFailed(Data, UInt16, Error)
+    case sent(Data, UInt16)
+    case received(Data, UInt16)
+    case unexpectedPacket(Data)
+    case failed(Error)
+}
 
 class SimplePingManager: NSObject {
-    enum SimplePingResponse {
-        case start(String)
-        case sendFailed(Data, UInt16, Error)
-        case sent(Data, UInt16)
-        case received(Data, UInt16)
-        case unexpectedPacket(Data)
-        case failed(Error)
-    }
-
     typealias SimplePingHandler = (SimplePingResponse) -> Void
 
     private var pinger: SimplePing?
@@ -25,6 +26,10 @@ class SimplePingManager: NSObject {
 
     var isStarted: Bool { return pinger != nil }
     var nextSequenceNumber: Int? { (pinger?.nextSequenceNumber).flatMap { Int($0) } }
+
+    deinit {
+        stop()
+    }
 }
 
 // MARK: Public interface
@@ -161,5 +166,54 @@ extension SimplePingManager: SimplePingDelegate {
 
     func simplePing(_ pinger: SimplePing, didReceiveUnexpectedPacket packet: Data) {
         handler?(.unexpectedPacket(packet))
+    }
+}
+
+@available(iOS 13.0, *)
+class SimplePingSubscription<SubscriberType: Subscriber>: Subscription where SubscriberType.Input == SimplePingResponse, SubscriberType.Failure == Error {
+    private var subscriber: SubscriberType?
+    private var manager = SimplePingManager()
+
+    init(subscriber: SubscriberType, hostName: String, forceIPv4: Bool = false, forceIPv6: Bool = false) {
+        self.subscriber = subscriber
+        manager.start(hostName: hostName, forceIPv4: forceIPv4, forceIPv6: forceIPv6) { response in
+            switch response {
+            case .failed(let error):
+                _ = subscriber.receive(completion: .failure(error))
+            default:
+                _ = subscriber.receive(response)
+            }
+        }
+    }
+
+    func request(_ demand: Subscribers.Demand) {
+        // We do nothing here as we only want to send events when they occur.
+        // See, for more info: https://developer.apple.com/documentation/combine/subscribers/demand
+    }
+
+    func cancel() {
+        subscriber = nil
+        manager.stop()
+    }
+}
+
+@available(iOS 13.0, *)
+struct SimplePingPublisher: Publisher {
+    typealias Output = SimplePingResponse
+    typealias Failure = Error
+
+    let hostName: String
+    let forceIPv4: Bool
+    let forceIPv6: Bool
+
+    init(hostName: String, forceIPv4: Bool = false, forceIPv6: Bool = false) {
+        self.hostName = hostName
+        self.forceIPv4 = forceIPv4
+        self.forceIPv6 = forceIPv6
+    }
+
+    func receive<S>(subscriber: S) where S : Subscriber, S.Failure == Failure, S.Input == Output {
+        let subscription = SimplePingSubscription(subscriber: subscriber, hostName: hostName, forceIPv4: forceIPv4, forceIPv6: forceIPv6)
+        subscriber.receive(subscription: subscription)
     }
 }

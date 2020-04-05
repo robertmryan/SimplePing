@@ -7,6 +7,49 @@ This project takes [Apple's `SimplePing` code sample](https://developer.apple.co
 * Updated the iOS target to work with Swift 5, Xcode 11.4.
 * Pulled the `SimplePing` logic out of the view controller and into a separate `SimplePingManager` object.
 
+    ```
+    let pingManager = SimplePingManager()
+    
+    func startPingingAndPrintResults() {
+        pingManager.start(hostName: hostName, forceIPv4: forceIPv4, forceIPv6: forceIPv6) { result in
+            print(result)
+        }
+    }
+    ```
+
+* Created Combine publisher `SimplePingPublisher`, used as follows:
+
+    ```
+    struct ContentView: View {
+        @State var simplePing: AnyCancellable?
+        @State var isRunning = false
+
+        var body: some View {
+            Button(action: {
+                self.startOrStopPing()
+            }) {
+                Text(isRunning ? "Stop" : "Start")
+            }
+        }
+
+        private func startOrStopPing() {
+            defer { isRunning = !isRunning }
+
+            guard !isRunning else {
+                simplePing?.cancel()
+                return
+            }
+
+            simplePing = SimplePingPublisher(hostName: "www.apple.com")
+                .sink(receiveCompletion: { completion in
+                    print(completion)
+                }, receiveValue: { response in
+                    print(response)
+                })
+        }
+    }
+    ```
+
 Robert M. Ryan<br />
 4 April 2020
 
