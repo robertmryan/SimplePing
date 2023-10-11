@@ -179,7 +179,7 @@ class SimplePingSubscription<SubscriberType: Subscriber>: Subscription where Sub
         manager.start(hostName: hostName, forceIPv4: forceIPv4, forceIPv6: forceIPv6) { response in
             switch response {
             case .failed(let error):
-                _ = subscriber.receive(completion: .failure(error))
+                subscriber.receive(completion: .failure(error))
             default:
                 _ = subscriber.receive(response)
             }

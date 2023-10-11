@@ -4,7 +4,7 @@
 
 This project takes [Apple's `SimplePing` code sample](https://developer.apple.com/library/archive/samplecode/SimplePing/Introduction/Intro.html) and has done the following:
 
-* Updated the iOS target to work with Swift 5, Xcode 11.4.
+* Updated the iOS target to work with Swift 5.x, Xcode 15.
 * Pulled the `SimplePing` logic out of the view controller and into a separate `SimplePingManager` object.
 
     ```
